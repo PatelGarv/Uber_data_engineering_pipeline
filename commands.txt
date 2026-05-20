@@ -1,0 +1,33 @@
+# Uber Data Pipeline - Mage AI Setup on Google Cloud VM
+
+# Update Ubuntu
+sudo apt update && sudo apt upgrade -y
+
+# Install Python & Virtual Environment Tools
+sudo apt install python3-pip python3-venv -y
+
+# Create Project Folder
+mkdir ~/mage-project
+cd ~/mage-project
+
+# Create Python Virtual Environment
+python3 -m venv mage-env
+
+# Activate Virtual Environment
+source mage-env/bin/activate
+
+# Upgrade pip
+pip install --upgrade pip
+
+# Install Mage AI
+pip install mage-ai
+
+# Fix Pandas Compatibility Issue
+pip uninstall pandas -y
+pip install pandas==2.1.4
+
+# Upgrade Jinja2
+pip install --upgrade "jinja2>=3.1.5"
+
+# Start Mage Project
+mage start uber-datapipline --host 0.0.0.0
