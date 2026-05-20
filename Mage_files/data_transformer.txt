@@ -1,0 +1,68 @@
+import pandas as pd
+
+if 'transformer' not in globals():
+    from mage_ai.data_preparation.decorators import transformer
+if 'test' not in globals():
+    from mage_ai.data_preparation.decorators import test
+
+
+@transformer
+def transform(df, *args, **kwargs):
+
+    # --- Datetime conversion ---
+    df['tpep_pickup_datetime']  = pd.to_datetime(df['tpep_pickup_datetime'])
+    df['tpep_dropoff_datetime'] = pd.to_datetime(df['tpep_dropoff_datetime'])
+
+    df = df.drop_duplicates().reset_index(drop=True)
+    df['trip_id'] = df.index
+
+    # --- Add all derived ID and datetime columns onto df ---
+    df['datetime_id']         = df.index
+    df['pick_hour']           = df['tpep_pickup_datetime'].dt.hour
+    df['pick_day']            = df['tpep_pickup_datetime'].dt.day
+    df['pick_month']          = df['tpep_pickup_datetime'].dt.month
+    df['pick_year']           = df['tpep_pickup_datetime'].dt.year
+    df['pick_weekday']        = df['tpep_pickup_datetime'].dt.weekday
+    df['drop_hour']           = df['tpep_dropoff_datetime'].dt.hour
+    df['drop_day']            = df['tpep_dropoff_datetime'].dt.day
+    df['drop_month']          = df['tpep_dropoff_datetime'].dt.month
+    df['drop_year']           = df['tpep_dropoff_datetime'].dt.year
+    df['drop_weekday']        = df['tpep_dropoff_datetime'].dt.weekday
+    df['passenger_count_id']  = df.index
+    df['trip_distance_id']    = df.index
+    df['rate_code_id']        = df.index
+    df['pickup_location_id']  = df.index
+    df['dropoff_location_id'] = df.index
+    df['payment_type_id']     = df.index
+
+    # --- Lookup maps ---
+    rate_code_type = {
+        1: "Standard rate",
+        2: "JFK",
+        3: "Newark",
+        4: "Nassau or Westchester",
+        5: "Negotiated Fare",
+        6: "Group ride"
+    }
+    payment_type_name = {
+        1: "Credit card",
+        2: "Cash",
+        3: "No charge",
+        4: "Dispute",
+        5: "Unknown",
+        6: "Voided trip"
+    }
+
+    df['rate_code_name']    = df['RatecodeID'].map(rate_code_type)
+    df['payment_type_name'] = df['payment_type'].map(payment_type_name)
+
+    # --- Convert timestamps to string to avoid serialization issues ---
+    df['tpep_pickup_datetime']  = df['tpep_pickup_datetime'].astype(str)
+    df['tpep_dropoff_datetime'] = df['tpep_dropoff_datetime'].astype(str)
+
+    return df
+
+
+@test
+def test_output(output, *args) -> None:
+    assert output is not None, 'The output is undefined'

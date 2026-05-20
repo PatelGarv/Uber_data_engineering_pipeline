@@ -1,0 +1,64 @@
+from mage_ai.data_preparation.repo_manager import get_repo_path
+from mage_ai.io.bigquery import BigQuery
+from mage_ai.io.config import ConfigFileLoader
+from google.cloud import bigquery
+from os import path
+
+if 'data_exporter' not in globals():
+    from mage_ai.data_preparation.decorators import data_exporter
+
+
+@data_exporter
+def export_data_to_big_query(df, **kwargs) -> None:
+
+    config_path    = path.join(get_repo_path(), 'io_config.yaml')
+    config_profile = 'default'
+    bq             = BigQuery.with_config(ConfigFileLoader(config_path, config_profile))
+    project_id = 'uber-data-pipeline-496523'
+    dataset = 'uber_datapipeline'
+
+
+    def export(table_df, name):
+        table_id = f"{project_id}.{dataset}.{name}"
+        print(f"Exporting '{name}' — shape: {table_df.shape}")
+        bq.export(
+            table_df,
+            table_id,
+            if_exists='replace',
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE
+        )
+        print(f"✓ Done: {name}")
+
+    # --- Datetime Dimension ---
+    export(df[[
+        'datetime_id',
+        'tpep_pickup_datetime', 'pick_hour', 'pick_day', 'pick_month', 'pick_year', 'pick_weekday',
+        'tpep_dropoff_datetime', 'drop_hour', 'drop_day', 'drop_month', 'drop_year', 'drop_weekday'
+    ]].copy(), 'datetime_dim')
+
+    # --- Passenger Count Dimension ---
+    export(df[['passenger_count_id', 'passenger_count']].copy(), 'passenger_count_dim')
+
+    # --- Trip Distance Dimension ---
+    export(df[['trip_distance_id', 'trip_distance']].copy(), 'trip_distance_dim')
+
+    # --- Rate Code Dimension ---
+    export(df[['rate_code_id', 'RatecodeID', 'rate_code_name']].copy(), 'rate_code_dim')
+
+    # --- Pickup Location Dimension ---
+    export(df[['pickup_location_id', 'pickup_latitude', 'pickup_longitude']].copy(), 'pickup_location_dim')
+
+    # --- Dropoff Location Dimension ---
+    export(df[['dropoff_location_id', 'dropoff_latitude', 'dropoff_longitude']].copy(), 'dropoff_location_dim')
+
+    # --- Payment Type Dimension ---
+    export(df[['payment_type_id', 'payment_type', 'payment_type_name']].copy(), 'payment_type_dim')
+
+    # --- Fact Table ---
+    export(df[[
+        'trip_id', 'VendorID', 'datetime_id', 'passenger_count_id',
+        'trip_distance_id', 'rate_code_id', 'store_and_fwd_flag',
+        'pickup_location_id', 'dropoff_location_id', 'payment_type_id',
+        'fare_amount', 'extra', 'mta_tax',
+        'tip_amount', 'tolls_amount', 'improvement_surcharge', 'total_amount'
+    ]].copy(), 'fact_table')
