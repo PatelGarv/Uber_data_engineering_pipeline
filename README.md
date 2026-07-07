@@ -1,4 +1,4 @@
-# Uber Data Analytics | Modern Data Engineering GCP Project
+# NYC Uber Data Analytics | Modern Data Engineering GCP Project
 
 ## Introduction
 So I put this together to actually work with Uber trip data hands-on rather 
